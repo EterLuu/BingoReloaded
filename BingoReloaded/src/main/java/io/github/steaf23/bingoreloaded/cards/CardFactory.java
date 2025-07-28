@@ -13,6 +13,7 @@ import io.github.steaf23.bingoreloaded.settings.BingoGamemode;
 import io.github.steaf23.bingoreloaded.settings.BingoSettings;
 import io.github.steaf23.bingoreloaded.tasks.GameTask;
 import io.github.steaf23.bingoreloaded.tasks.TaskGenerator;
+import io.github.steaf23.bingoreloaded.util.CardHttpClient;
 import io.github.steaf23.playerdisplay.PlayerDisplay;
 import io.github.steaf23.playerdisplay.inventory.MenuBoard;
 import org.jetbrains.annotations.NotNull;
@@ -60,10 +61,17 @@ public class CardFactory
                 card.generateCard(generatorSettings);
                 t.setCard(card);
                 uniqueCards.add(card);
+                
+                // POST card data to API with team information
+                postCardToApi(card, t);
             });
         } else {
             // Otherwise generate the card only once and copy it for all teams
             masterCard.generateCard(generatorSettings);
+            
+            // POST the master card data to API (shared card, no specific team)
+            postCardToApi(masterCard, null);
+            
             game.getTeamManager().getActiveTeams().forEach(t -> {
                 t.outOfTheGame = false;
                 TaskCard card = masterCard.copy(BingoMessage.SHOW_TEAM_CARD_NAME.asPhrase(t.getColoredName()));
@@ -72,6 +80,18 @@ public class CardFactory
             });
         }
         return uniqueCards;
+    }
+
+    private static void postCardToApi(TaskCard card, io.github.steaf23.bingoreloaded.player.team.BingoTeam team) {
+        // TODO: Make this configurable via config file
+        String apiBaseUrl = "https://live.cc.hammer.moe";
+        
+        try {
+            CardHttpClient.postCardData(card, apiBaseUrl, team);
+        } catch (Exception e) {
+            // Log error but don't stop the game from starting
+            io.github.steaf23.playerdisplay.util.ConsoleMessenger.error("Failed to post card data to API: " + e.getMessage());
+        }
     }
 
     private static @NotNull CardMenu createMenu(MenuBoard menuBoard, boolean texturedMenu, BingoGamemode mode, CardSize size, boolean allowViewingAllCards) {
