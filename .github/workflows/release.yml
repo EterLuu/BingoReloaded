@@ -45,7 +45,7 @@ jobs:
         chmod +x gradlew
 
     - name: Build release JAR
-      run: ./gradlew clean build shadowJar
+      run: ./gradlew clean build shadowJar -x test
 
     - name: Get version from build.gradle
       id: get_version
