@@ -11,6 +11,7 @@ This directory contains GitHub Actions workflows for automated building, testing
 
 **Steps:**
 - Sets up JDK 21 (required for the project)
+- **Auto-fixes missing Gradle wrapper JAR** (common issue)
 - Caches Gradle dependencies for faster builds
 - Compiles both BingoReloaded and PlayerDisplay modules
 - Runs all tests
@@ -76,3 +77,25 @@ For local development:
 ./gradlew shadowJar      # Create fat JAR
 ./gradlew clean build    # Clean build
 ```
+
+## Troubleshooting
+
+### ❌ "Could not find or load main class org.gradle.wrapper.GradleWrapperMain"
+
+This error occurs when `gradle/wrapper/gradle-wrapper.jar` is missing. The GitHub Actions are configured to automatically fix this by downloading the missing JAR file.
+
+**For local development, fix manually:**
+```bash
+# Download the missing wrapper JAR
+curl -L -o gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v8.14.0/gradle/wrapper/gradle-wrapper.jar
+chmod +x gradlew
+```
+
+### ❌ Build fails with "Java 21 required"
+
+Ensure you have Java 21 installed locally:
+```bash
+java -version  # Should show Java 21
+```
+
+The GitHub Actions automatically use Java 21, so this only affects local builds.

@@ -54,13 +54,13 @@ public class CardHttpClient {
         
         // Get card size information
         cardJson.addProperty("size", card.size.fullCardSize);
-        cardJson.addProperty("width", card.size.width);
-        cardJson.addProperty("height", card.size.height);
+        cardJson.addProperty("width", card.size.size);
+        cardJson.addProperty("height", card.size.size);
         
         // Add team information if provided
         if (team != null) {
             JsonObject teamJson = new JsonObject();
-            teamJson.addProperty("name", team.getName());
+            teamJson.addProperty("name", team.getName().toString());
             teamJson.addProperty("color", team.getColor().toString());
             teamJson.addProperty("completeCount", team.getCompleteCount());
             teamJson.addProperty("outOfTheGame", team.outOfTheGame);
@@ -88,20 +88,20 @@ public class CardHttpClient {
             JsonObject taskJson = new JsonObject();
             
             // Calculate relative coordinates (x, y) from index
-            int x = i % card.size.width;  // Column (0-based)
-            int y = i / card.size.width;  // Row (0-based)
+            int x = i % card.size.size;  // Column (0-based)
+            int y = i / card.size.size;  // Row (0-based)
             
             taskJson.addProperty("index", i);
             taskJson.addProperty("x", x);
             taskJson.addProperty("y", y);
-            taskJson.addProperty("name", task.data.getName());
+            taskJson.addProperty("name", task.data.getName().toString());
             taskJson.addProperty("type", task.data.getType().toString());
-            taskJson.addProperty("description", task.data.getTooltip());
+            taskJson.addProperty("description", task.data.getChatDescription().toString());
             
             // Add task material/item information if available
             if (task.data instanceof io.github.steaf23.bingoreloaded.tasks.data.ItemTask itemTask) {
-                taskJson.addProperty("material", itemTask.getItem().toString());
-                taskJson.addProperty("count", itemTask.getCount());
+                taskJson.addProperty("material", itemTask.material().toString());
+                taskJson.addProperty("count", itemTask.count());
             }
             
             // Use coordinate-based key for better organization
