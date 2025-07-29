@@ -8,6 +8,7 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 30  # Increase timeout for Paper setup
 
     steps:
     - name: Checkout code
