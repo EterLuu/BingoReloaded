@@ -168,21 +168,34 @@ public class SoloTeamManager implements TeamManager
             if (!session.isRunning()) {
                 return;
             }
-            BingoMessage.JOIN.sendToAudience(participant, NamedTextColor.GREEN, participant.getTeam().getColoredName());
+            // In solo mode, participants should have their own team
+            if (participant.getTeam() != null && !participant.getTeam().getIdentifier().equals("auto")) {
+                BingoMessage.JOIN.sendToAudience(participant, NamedTextColor.GREEN, participant.getTeam().getColoredName());
+                event.getPlayer().setGameMode(GameMode.SURVIVAL);
+            } else {
+                // Something went wrong, make them spectator
+                event.getPlayer().setGameMode(GameMode.SPECTATOR);
+                if (session.getPluginConfig().getOptionValue(BingoOptions.ALLOW_VIEWING_ALL_CARDS)) {
+                    BingoMessage.SPECTATOR_JOIN.sendToAudience(event.getPlayer());
+                } else {
+                    BingoMessage.SPECTATOR_JOIN_NO_VIEW.sendToAudience(event.getPlayer());
+                }
+            }
             return;
         }
 
         if (session.isRunning()) {
+            // Game running, new players become spectators in solo mode
             event.getPlayer().setGameMode(GameMode.SPECTATOR);
             if (session.getPluginConfig().getOptionValue(BingoOptions.ALLOW_VIEWING_ALL_CARDS)) {
                 BingoMessage.SPECTATOR_JOIN.sendToAudience(event.getPlayer());
-            }
-            else {
+            } else {
                 BingoMessage.SPECTATOR_JOIN_NO_VIEW.sendToAudience(event.getPlayer());
             }
             return;
         }
 
+        // Game not running, add to auto team
         addMemberToTeam(new BingoPlayer(event.getPlayer(), session), "auto");
     }
 

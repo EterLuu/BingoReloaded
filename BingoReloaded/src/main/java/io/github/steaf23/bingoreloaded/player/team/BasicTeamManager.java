@@ -334,25 +334,49 @@ public class BasicTeamManager implements TeamManager {
 
         BingoParticipant participant = getPlayerAsParticipant(event.getPlayer());
         if (participant != null) {
+            // Player is already a participant
             if (!session.isRunning()) {
+                // Game not running - check if they're in a real team or just auto team
+                if (participant.getTeam() != null && !participant.getTeam().getIdentifier().equals("auto")) {
+                    // They're in a real team, let them play
+                    return;
+                } else {
+                    // They're in auto team or no team - let them use team selection
+                    return;
+                }
+            }
+            
+            // Game is running
+            if (participant.getTeam() != null && !participant.getTeam().getIdentifier().equals("auto")) {
+                // They have a real team, welcome them back
+                BingoMessage.JOIN.sendToAudience(participant, NamedTextColor.GREEN, participant.getTeam().getColoredName());
+                event.getPlayer().setGameMode(GameMode.SURVIVAL);
+                return;
+            } else {
+                // They don't have a real team during game - make them spectator
+                event.getPlayer().setGameMode(GameMode.SPECTATOR);
+                if (session.getPluginConfig().getOptionValue(BingoOptions.ALLOW_VIEWING_ALL_CARDS)) {
+                    BingoMessage.SPECTATOR_JOIN.sendToAudience(event.getPlayer());
+                } else {
+                    BingoMessage.SPECTATOR_JOIN_NO_VIEW.sendToAudience(event.getPlayer());
+                }
                 return;
             }
-            BingoMessage.JOIN.sendToAudience(participant, NamedTextColor.GREEN, participant.getTeam().getColoredName());
-            return;
         }
 
+        // Player is not a participant yet
         if (session.isRunning()) {
+            // Game is running, new players become spectators
             event.getPlayer().setGameMode(GameMode.SPECTATOR);
             if (session.getPluginConfig().getOptionValue(BingoOptions.ALLOW_VIEWING_ALL_CARDS)) {
                 BingoMessage.SPECTATOR_JOIN.sendToAudience(event.getPlayer());
-            }
-            else {
+            } else {
                 BingoMessage.SPECTATOR_JOIN_NO_VIEW.sendToAudience(event.getPlayer());
             }
-
             return;
         }
 
+        // Game not running, add to auto team for team selection
         addMemberToTeam(new BingoPlayer(event.getPlayer(), session), "auto");
     }
 }

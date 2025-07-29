@@ -4,6 +4,7 @@ import io.github.steaf23.bingoreloaded.BingoReloaded;
 import io.github.steaf23.bingoreloaded.data.BingoMessage;
 import io.github.steaf23.bingoreloaded.data.BingoStatData;
 import io.github.steaf23.bingoreloaded.data.CustomKitData;
+import io.github.steaf23.bingoreloaded.data.TeamData;
 import io.github.steaf23.bingoreloaded.data.config.BingoConfigurationData;
 import io.github.steaf23.bingoreloaded.data.config.BingoOptions;
 import io.github.steaf23.bingoreloaded.gameloop.BingoSession;
@@ -18,6 +19,7 @@ import io.github.steaf23.bingoreloaded.gui.inventory.VoteMenu;
 import io.github.steaf23.bingoreloaded.gui.inventory.creator.BingoCreatorMenu;
 import io.github.steaf23.bingoreloaded.player.BingoParticipant;
 import io.github.steaf23.bingoreloaded.player.BingoPlayer;
+import io.github.steaf23.bingoreloaded.player.team.BingoTeam;
 import io.github.steaf23.bingoreloaded.settings.CustomKit;
 import io.github.steaf23.bingoreloaded.settings.PlayerKit;
 import io.github.steaf23.bingoreloaded.util.BingoPlayerSender;
@@ -26,6 +28,7 @@ import io.github.steaf23.playerdisplay.inventory.MenuBoard;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
@@ -232,11 +235,14 @@ public class BingoCommand implements TabExecutor
                         " Created by: " + BingoReloaded.getInstance().getPluginMeta().getAuthors()));
                 player.sendMessage(BingoMessage.createInfoUrlComponent(Component.text("Join the bingo reloaded discord server here to stay up to date!"), "https://discord.gg/AzZNxPRNPf"));
             }
+            case "team" -> {
+                return handleTeamCommand(player, session, args);
+            }
             default -> {
                 if (player.hasPermission("bingo.admin")) {
-                    BingoMessage.COMMAND_USAGE.sendToAudience(player, NamedTextColor.RED, Component.text("/bingo [getcard | stats | start | end | join | vote | back | leave | deathmatch | creator | teams | kit | wait | teamedit | about | reload | view]"));
+                    BingoMessage.COMMAND_USAGE.sendToAudience(player, NamedTextColor.RED, Component.text("/bingo [getcard | stats | start | end | join | vote | back | leave | deathmatch | creator | teams | kit | wait | teamedit | about | reload | view | team]"));
                 } else {
-                    BingoMessage.COMMAND_USAGE.sendToAudience(player, NamedTextColor.RED, Component.text("/bingo [getcard | stats | join | vote | back | leave | about | view]"));
+                    BingoMessage.COMMAND_USAGE.sendToAudience(player, NamedTextColor.RED, Component.text("/bingo [getcard | stats | join | vote | back | leave | about | view | team]"));
                 }
             }
         }
@@ -342,7 +348,7 @@ public class BingoCommand implements TabExecutor
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
         if (!(sender instanceof Player player) || player.hasPermission("bingo.admin")) {
             if (args.length <= 1) {
-                return List.of("join", "vote", "getcard", "back", "leave", "stats", "end", "wait", "kit", "deathmatch", "creator", "teams", "teamedit", "about", "reload", "view");
+                return List.of("join", "vote", "getcard", "back", "leave", "stats", "end", "wait", "kit", "deathmatch", "creator", "teams", "teamedit", "about", "reload", "view", "team");
             }
 
             if (args[0].equals("kit")) {
@@ -356,6 +362,20 @@ public class BingoCommand implements TabExecutor
                         }
                         case "item" -> {
                             return List.of("wand", "card");
+                        }
+                    }
+                }
+            }
+            
+            if (args[0].equals("team")) {
+                if (args.length == 2) {
+                    return List.of("create", "join", "leave", "list", "invite", "kick");
+                }
+                if (args.length == 3) {
+                    switch (args[1]) {
+                        case "join", "invite", "kick" -> {
+                            // Return list of available teams or players
+                            return List.of();
                         }
                     }
                 }
@@ -373,7 +393,7 @@ public class BingoCommand implements TabExecutor
         }
 
         if (args.length == 1) {
-            return List.of("join", "vote", "getcard", "back", "leave", "stats", "about", "view");
+            return List.of("join", "vote", "getcard", "back", "leave", "stats", "about", "view", "team");
         }
         return List.of();
     }
@@ -430,5 +450,183 @@ public class BingoCommand implements TabExecutor
 
     public void reloadLanguage() {
         plugin.reloadLanguage();
+    }
+
+    /**
+     * Handle team management commands
+     * /bingo team create <name> [color] - Create a new team
+     * /bingo team join <name> - Join a team
+     * /bingo team leave - Leave current team
+     * /bingo team list - List all teams
+     * /bingo team invite <player> - Invite player to your team (if you're team leader)
+     * /bingo team kick <player> - Kick player from your team (if you're team leader)
+     */
+    private boolean handleTeamCommand(Player player, BingoSession session, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(Component.text("Usage: /bingo team <create|join|leave|list|invite|kick> [args]").color(NamedTextColor.RED));
+            return true;
+        }
+
+        String subCommand = args[1].toLowerCase();
+        
+        switch (subCommand) {
+            case "create" -> {
+                return handleTeamCreate(player, session, args);
+            }
+            case "join" -> {
+                return handleTeamJoin(player, session, args);
+            }
+            case "leave" -> {
+                return handleTeamLeave(player, session);
+            }
+            case "list" -> {
+                return handleTeamList(player, session);
+            }
+            case "invite" -> {
+                return handleTeamInvite(player, session, args);
+            }
+            case "kick" -> {
+                return handleTeamKick(player, session, args);
+            }
+            default -> {
+                player.sendMessage(Component.text("Unknown team command. Use: create, join, leave, list, invite, kick").color(NamedTextColor.RED));
+                return true;
+            }
+        }
+    }
+
+    private boolean handleTeamCreate(Player player, BingoSession session, String[] args) {
+        if (args.length < 3) {
+            player.sendMessage(Component.text("Usage: /bingo team create <name> [color]").color(NamedTextColor.RED));
+            return true;
+        }
+
+        String teamName = args[2];
+        TextColor teamColor = NamedTextColor.WHITE;
+        
+        // Parse color if provided
+        if (args.length >= 4) {
+            try {
+                if (args[3].startsWith("#")) {
+                    teamColor = TextColor.fromHexString(args[3]);
+                } else {
+                    teamColor = NamedTextColor.NAMES.value(args[3].toLowerCase());
+                }
+                if (teamColor == null) {
+                    teamColor = NamedTextColor.WHITE;
+                }
+            } catch (Exception e) {
+                teamColor = NamedTextColor.WHITE;
+            }
+        }
+
+        // Check if team name already exists
+        TeamData teamData = new TeamData();
+        if (teamData.getTeams().containsKey(teamName)) {
+            player.sendMessage(Component.text("A team with name '" + teamName + "' already exists!").color(NamedTextColor.RED));
+            return true;
+        }
+
+        // Create the team
+        teamData.addTeam(teamName, teamName, teamColor);
+        player.sendMessage(Component.text("Team '" + teamName + "' created successfully!").color(NamedTextColor.GREEN));
+        
+        // Auto-join the creator to the team
+        BingoParticipant participant = session.teamManager.getPlayerAsParticipant(player);
+        if (participant == null) {
+            participant = new BingoPlayer(player, session);
+        }
+        
+        if (session.teamManager.addMemberToTeam(participant, teamName)) {
+            player.sendMessage(Component.text("You have been added to team '" + teamName + "'").color(NamedTextColor.GREEN));
+        }
+        
+        return true;
+    }
+
+    private boolean handleTeamJoin(Player player, BingoSession session, String[] args) {
+        if (args.length < 3) {
+            player.sendMessage(Component.text("Usage: /bingo team join <name>").color(NamedTextColor.RED));
+            return true;
+        }
+
+        String teamName = args[2];
+        
+        BingoParticipant participant = session.teamManager.getPlayerAsParticipant(player);
+        if (participant == null) {
+            participant = new BingoPlayer(player, session);
+        }
+
+        if (session.teamManager.addMemberToTeam(participant, teamName)) {
+            player.sendMessage(Component.text("Successfully joined team '" + teamName + "'!").color(NamedTextColor.GREEN));
+        } else {
+            player.sendMessage(Component.text("Failed to join team '" + teamName + "'. Team may be full or not exist.").color(NamedTextColor.RED));
+        }
+        
+        return true;
+    }
+
+    private boolean handleTeamLeave(Player player, BingoSession session) {
+        BingoParticipant participant = session.teamManager.getPlayerAsParticipant(player);
+        if (participant == null) {
+            player.sendMessage(Component.text("You are not in any team!").color(NamedTextColor.RED));
+            return true;
+        }
+
+        if (session.teamManager.removeMemberFromTeam(participant)) {
+            player.sendMessage(Component.text("You have left your team.").color(NamedTextColor.GREEN));
+        } else {
+            player.sendMessage(Component.text("Failed to leave team.").color(NamedTextColor.RED));
+        }
+        
+        return true;
+    }
+
+    private boolean handleTeamList(Player player, BingoSession session) {
+        player.sendMessage(Component.text("=== Active Teams ===").color(NamedTextColor.GOLD));
+        
+        boolean hasTeams = false;
+        for (BingoTeam team : session.teamManager.getActiveTeams()) {
+            if (team.getIdentifier().equals("auto")) continue; // Skip auto team
+            
+            hasTeams = true;
+            Component teamInfo = Component.text(" - ")
+                .append(team.getColoredName())
+                .append(Component.text(" (" + team.getMembers().size() + "/" + session.teamManager.getMaxTeamSize() + "): "))
+                .append(Component.join(Component.text(", "), 
+                    team.getMembers().stream()
+                        .map(BingoParticipant::getDisplayName)
+                        .toList()));
+            
+            player.sendMessage(teamInfo);
+        }
+        
+        if (!hasTeams) {
+            player.sendMessage(Component.text("No active teams found.").color(NamedTextColor.GRAY));
+        }
+        
+        return true;
+    }
+
+    private boolean handleTeamInvite(Player player, BingoSession session, String[] args) {
+        if (args.length < 3) {
+            player.sendMessage(Component.text("Usage: /bingo team invite <player>").color(NamedTextColor.RED));
+            return true;
+        }
+
+        // For now, just show a message. Full invite system would require more complex implementation
+        player.sendMessage(Component.text("Team invite system is not fully implemented yet. Use /bingo team join <name> instead.").color(NamedTextColor.YELLOW));
+        return true;
+    }
+
+    private boolean handleTeamKick(Player player, BingoSession session, String[] args) {
+        if (args.length < 3) {
+            player.sendMessage(Component.text("Usage: /bingo team kick <player>").color(NamedTextColor.RED));
+            return true;
+        }
+
+        // For now, just show a message. Full kick system would require team leadership logic
+        player.sendMessage(Component.text("Team kick system is not fully implemented yet. Players can use /bingo team leave to leave teams.").color(NamedTextColor.YELLOW));
+        return true;
     }
 }
