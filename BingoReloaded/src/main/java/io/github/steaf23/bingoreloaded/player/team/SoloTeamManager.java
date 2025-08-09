@@ -76,10 +76,10 @@ public class SoloTeamManager implements TeamManager
     @Override
     public void setup() {
         teams.removeTeam(autoTeam);
-        for (BingoParticipant participant : new HashSet<>(autoTeam.getMembers())) {
-            autoTeam.removeMember(participant);
-            setupParticipant(participant);
-        }
+//        for (BingoParticipant participant : new HashSet<>(autoTeam.getMembers())) {
+//            autoTeam.removeMember(participant);
+//            setupParticipant(participant);
+//        }
     }
 
     @Override
@@ -183,7 +183,7 @@ public class SoloTeamManager implements TeamManager
             return;
         }
 
-        addMemberToTeam(new BingoPlayer(event.getPlayer(), session), "auto");
+//        addMemberToTeam(new BingoPlayer(event.getPlayer(), session), "auto");
     }
 
     @Override

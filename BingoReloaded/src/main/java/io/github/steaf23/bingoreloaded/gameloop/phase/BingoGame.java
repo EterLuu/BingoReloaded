@@ -136,7 +136,7 @@ public class BingoGame implements GamePhase
             return;
         }
         world.setStorm(false);
-        world.setTime(1000);
+        world.setTime(9000);
 
         // Generate cards
         boolean useAdvancements = !(BingoReloaded.areAdvancementsDisabled() || config.getOptionValue(BingoOptions.DISABLE_ADVANCEMENTS));
@@ -461,13 +461,13 @@ public class BingoGame implements GamePhase
                 }
             }
             case ALL -> {
-                Location spawnLocation = getRandomSpawnLocation(world);
-                if (!getTeamManager().getParticipants().isEmpty()) {
-                    spawnPlatform(spawnLocation, 5, true);
-
-                    BingoReloaded.scheduleTask(task ->
-                            BingoGame.removePlatform(spawnLocation, 5), platformLifetime);
-                }
+                Location spawnLocation = world.getSpawnLocation();
+//                if (!getTeamManager().getParticipants().isEmpty()) {
+//                    spawnPlatform(spawnLocation, 5, true);
+//
+//                    BingoReloaded.scheduleTask(task ->
+//                            BingoGame.removePlatform(spawnLocation, 5), platformLifetime);
+//                }
 
                 Set<BingoParticipant> players = getTeamManager().getParticipants();
                 players.forEach(p -> teleportPlayerToStart(p, spawnLocation, 5));
@@ -550,10 +550,10 @@ public class BingoGame implements GamePhase
             return;
         }
 
-        BingoMessage.COMPLETED.sendToAudience(session, NamedTextColor.AQUA,
-                event.getTask().data.getName(),
-                participant.getDisplayName().color(team.getColor()).decorate(TextDecoration.BOLD),
-                timeString.color(NamedTextColor.WHITE));
+//        BingoMessage.COMPLETED.sendToAudience(session, NamedTextColor.AQUA,
+//                event.getTask().data.getName(),
+//                participant.getDisplayName().color(team.getColor()).decorate(TextDecoration.BOLD),
+//                timeString.color(NamedTextColor.WHITE));
 
         var soundEvent = new BingoPlaySoundEvent(session, Sound.ENTITY_DRAGON_FIREBALL_EXPLODE);
         Bukkit.getPluginManager().callEvent(soundEvent);
@@ -565,24 +565,26 @@ public class BingoGame implements GamePhase
         });
 
         if (participant.getCard().isPresent() && participant.getCard().get().hasTeamWon(team)) {
-            bingo(team);
+            if(settings.useScoreAsWinCondition()){
+                bingo(team);
             return;
+            }
         }
 
 
-        // Start death match when all tasks have been completed in lockout
-        BingoTeam leadingTeam = teamManager.getActiveTeams().getLeadingTeam();
-        if (leadingTeam == null) {
-            return;
-        }
-        Optional<TaskCard> card = teamManager.getActiveTeams().getLeadingTeam().getCard();
-        if (!(card.orElse(null) instanceof LockoutTaskCard lockoutCard)) {
-            return;
-        }
-
-        if (teamManager.getActiveTeams().getTotalCompleteCount() == lockoutCard.size.fullCardSize) {
-            startDeathMatch(5);
-        }
+//        // Start death match when all tasks have been completed in lockout
+//        BingoTeam leadingTeam = teamManager.getActiveTeams().getLeadingTeam();
+//        if (leadingTeam == null) {
+//            return;
+//        }
+//        Optional<TaskCard> card = teamManager.getActiveTeams().getLeadingTeam().getCard();
+//        if (!(card.orElse(null) instanceof LockoutTaskCard lockoutCard)) {
+//            return;
+//        }
+//
+//        if (teamManager.getActiveTeams().getTotalCompleteCount() == lockoutCard.size.fullCardSize) {
+//            startDeathMatch(5);
+//        }
     }
 
     public void handleDeathmatchTaskComplete(final BingoDeathmatchTaskCompletedEvent event) {
@@ -672,18 +674,18 @@ public class BingoGame implements GamePhase
         }
 
         Location deathCoords = event.getEntity().getLocation();
-        if (config.getOptionValue(BingoOptions.TELEPORT_AFTER_DEATH)) {
-            Arrays.stream(BingoMessage.RESPAWN.convertForPlayer(event.getPlayer())).reduce(Component::append).ifPresent(hoverable -> {
-                BingoPlayerSender.sendMessage(BingoMessage.createHoverCommandMessage(
-                                Component.empty(),
-                                hoverable,
-                                null,
-                                Component.empty(),
-                                "/bingo back"),
-                        event.getPlayer());
-                respawnManager.addPlayer(event.getEntity().getUniqueId(), deathCoords);
-            });
-        }
+//        if (config.getOptionValue(BingoOptions.TELEPORT_AFTER_DEATH)) {
+//            Arrays.stream(BingoMessage.RESPAWN.convertForPlayer(event.getPlayer())).reduce(Component::append).ifPresent(hoverable -> {
+//                BingoPlayerSender.sendMessage(BingoMessage.createHoverCommandMessage(
+//                                Component.empty(),
+//                                hoverable,
+//                                null,
+//                                Component.empty(),
+//                                "/bingo back"),
+//                        event.getPlayer());
+//                respawnManager.addPlayer(event.getEntity().getUniqueId(), deathCoords);
+//            });
+//        }
     }
 
     public void handlePlayerRespawn(final PlayerRespawnEvent event) {

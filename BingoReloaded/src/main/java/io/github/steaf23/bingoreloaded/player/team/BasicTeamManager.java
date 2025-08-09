@@ -294,7 +294,7 @@ public class BasicTeamManager implements TeamManager {
 
     @Override
     public void setup() {
-        addAutoPlayersToTeams();
+//        addAutoPlayersToTeams();
         activeTeams.removeTeam(autoTeam);
         activeTeams.removeEmptyTeams("auto");
     }
@@ -353,6 +353,6 @@ public class BasicTeamManager implements TeamManager {
             return;
         }
 
-        addMemberToTeam(new BingoPlayer(event.getPlayer(), session), "auto");
+//        addMemberToTeam(new BingoPlayer(event.getPlayer(), session), "auto");
     }
 }

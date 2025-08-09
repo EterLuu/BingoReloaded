@@ -34,10 +34,10 @@ public class TeamDisplay
     public void update() {
         reset();
 
-        Set<BingoTeam> activeTeams = manager.getActiveTeams().getTeams();
-        for (Player player : session.getPlayersInWorld()) { // loop through all actual players.
-            addTeamsForPlayer(player, activeTeams);
-        }
+//        Set<BingoTeam> activeTeams = manager.getActiveTeams().getTeams();
+//        for (Player player : session.getPlayersInWorld()) { // loop through all actual players.
+//            addTeamsForPlayer(player, activeTeams);
+//        }
     }
 
     /**

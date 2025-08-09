@@ -1,5 +1,6 @@
 package io.github.steaf23.bingoreloaded.cards;
 
+import io.github.steaf23.bingoreloaded.BingoReloaded;
 import io.github.steaf23.bingoreloaded.data.BingoMessage;
 import io.github.steaf23.bingoreloaded.data.config.BingoOptions;
 import io.github.steaf23.bingoreloaded.gameloop.phase.BingoGame;
@@ -16,6 +17,7 @@ import io.github.steaf23.bingoreloaded.tasks.TaskGenerator;
 import io.github.steaf23.bingoreloaded.util.CardHttpClient;
 import io.github.steaf23.playerdisplay.PlayerDisplay;
 import io.github.steaf23.playerdisplay.inventory.MenuBoard;
+import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
@@ -61,17 +63,17 @@ public class CardFactory
                 card.generateCard(generatorSettings);
                 t.setCard(card);
                 uniqueCards.add(card);
-                
+
                 // POST card data to API with team information
                 postCardToApi(card, t);
             });
         } else {
             // Otherwise generate the card only once and copy it for all teams
             masterCard.generateCard(generatorSettings);
-            
+
             // POST the master card data to API (shared card, no specific team)
             postCardToApi(masterCard, null);
-            
+
             game.getTeamManager().getActiveTeams().forEach(t -> {
                 t.outOfTheGame = false;
                 TaskCard card = masterCard.copy(BingoMessage.SHOW_TEAM_CARD_NAME.asPhrase(t.getColoredName()));
@@ -84,10 +86,12 @@ public class CardFactory
 
     private static void postCardToApi(TaskCard card, io.github.steaf23.bingoreloaded.player.team.BingoTeam team) {
         // TODO: Make this configurable via config file
-        String apiBaseUrl = "http://live-cc-api.lynn6.top";
-        
+        String apiBaseUrl = "https://live-cc-api.lynn6.top";
+
         try {
-            CardHttpClient.postCardData(card, apiBaseUrl, team);
+            Bukkit.getServer().getScheduler().runTaskAsynchronously(BingoReloaded.getInstance(), () -> {
+                CardHttpClient.postCardData(card, apiBaseUrl, team);
+            });
         } catch (Exception e) {
             // Log error but don't stop the game from starting
             io.github.steaf23.playerdisplay.util.ConsoleMessenger.error("Failed to post card data to API: " + e.getMessage());
