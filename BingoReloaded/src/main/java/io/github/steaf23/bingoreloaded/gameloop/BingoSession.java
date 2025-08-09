@@ -172,11 +172,11 @@ public class BingoSession implements ForwardingAudience
         phase = new PregameLobby(menuBoard, hudRegistry, this, config);
         phase.setup();
 
-        getOverworld().getPlayers().forEach(p -> {
-            if (teamManager.getPlayerAsParticipant(p) == null) {
-                teamManager.addMemberToTeam(new BingoPlayer(p, this), "auto");
-            }
-        });
+//        getOverworld().getPlayers().forEach(p -> {
+//            if (teamManager.getPlayerAsParticipant(p) == null) {
+//                teamManager.addMemberToTeam(new BingoPlayer(p, this), "auto");
+//            }
+//        });
     }
 
     /**
