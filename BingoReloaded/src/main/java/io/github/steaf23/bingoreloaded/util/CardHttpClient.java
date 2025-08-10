@@ -8,6 +8,7 @@ import io.github.steaf23.bingoreloaded.player.team.BingoTeam;
 import io.github.steaf23.bingoreloaded.tasks.GameTask;
 import io.github.steaf23.bingoreloaded.tasks.data.TaskData;
 import io.github.steaf23.bingoreloaded.tasks.data.ItemTask;
+import io.github.steaf23.bingoreloaded.tasks.data.AdvancementTask;
 import io.github.steaf23.playerdisplay.util.ComponentUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -129,6 +130,14 @@ public class CardHttpClient {
                 taskJson.addProperty("material", itemTask.material().toString());
                 taskJson.addProperty("count", itemTask.count());
                 taskJson.addProperty("materialLabel", renderToLocale(ComponentUtils.itemName(itemTask.material()), DEFAULT_LOCALE));
+            }
+
+            // Add advancement info (translated) if applicable
+            if (task.data instanceof AdvancementTask advTask && advTask.advancement() != null) {
+                var adv = advTask.advancement();
+                taskJson.addProperty("advancementId", adv.getKey().toString());
+                taskJson.addProperty("advancementTitle", renderToLocale(ComponentUtils.advancementTitle(adv), DEFAULT_LOCALE));
+                taskJson.addProperty("advancementDescription", renderToLocale(ComponentUtils.advancementDescription(adv), DEFAULT_LOCALE));
             }
             
             // Use coordinate-based key for better organization
