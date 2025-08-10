@@ -6,6 +6,12 @@ import io.github.steaf23.bingoreloaded.BingoReloaded;
 import io.github.steaf23.bingoreloaded.cards.TaskCard;
 import io.github.steaf23.bingoreloaded.player.team.BingoTeam;
 import io.github.steaf23.bingoreloaded.tasks.GameTask;
+import io.github.steaf23.bingoreloaded.tasks.data.TaskData;
+import io.github.steaf23.bingoreloaded.tasks.data.ItemTask;
+import io.github.steaf23.playerdisplay.util.ComponentUtils;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.kyori.adventure.translation.GlobalTranslator;
 import io.github.steaf23.playerdisplay.util.ConsoleMessenger;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -20,6 +26,7 @@ import okhttp3.Response;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 public class CardHttpClient {
@@ -33,6 +40,24 @@ public class CardHttpClient {
             .readTimeout(30, TimeUnit.SECONDS)
             .build();
     private static final Gson gson = new Gson();
+    private static final Locale DEFAULT_LOCALE = Locale.SIMPLIFIED_CHINESE; // zh_CN
+
+    private static String renderToLocale(Component component, Locale locale) {
+        if (component == null) {
+            return "";
+        }
+        Component rendered = GlobalTranslator.render(component, locale);
+        return PlainTextComponentSerializer.plainText().serialize(rendered);
+    }
+
+    private static String typeLabel(TaskData.TaskType type) {
+        // 保持后端可解析的英文枚举不变，额外提供中文可读标签
+        return switch (type) {
+            case ITEM -> "物品";
+            case ADVANCEMENT -> "成就";
+            case STATISTIC -> "统计";
+        };
+    }
 
     /**
      * POST card data to the API endpoint with retry logic
@@ -60,7 +85,7 @@ public class CardHttpClient {
         // Add team information if provided
         if (team != null) {
             JsonObject teamJson = new JsonObject();
-            teamJson.addProperty("name", team.getName().toString());
+            teamJson.addProperty("name", renderToLocale(team.getName(), DEFAULT_LOCALE));
             teamJson.addProperty("color", team.getColor().toString());
             teamJson.addProperty("completeCount", team.getCompleteCount());
             teamJson.addProperty("outOfTheGame", team.outOfTheGame);
@@ -70,7 +95,7 @@ public class CardHttpClient {
             team.getMembers().forEach(member -> {
                 JsonObject memberJson = new JsonObject();
                 memberJson.addProperty("name", member.getName());
-                memberJson.addProperty("displayName", member.getDisplayName().toString());
+                memberJson.addProperty("displayName", renderToLocale(member.getDisplayName(), DEFAULT_LOCALE));
                 memberJson.addProperty("alwaysActive", member.alwaysActive());
                 membersJson.add(member.getName(), memberJson);
             });
@@ -94,14 +119,16 @@ public class CardHttpClient {
             taskJson.addProperty("index", i);
             taskJson.addProperty("x", x);
             taskJson.addProperty("y", y);
-            taskJson.addProperty("name", task.data.getName().toString());
+            taskJson.addProperty("name", renderToLocale(task.data.getName(), DEFAULT_LOCALE));
             taskJson.addProperty("type", task.data.getType().toString());
-            taskJson.addProperty("description", task.data.getChatDescription().toString());
+            taskJson.addProperty("typeLabel", typeLabel(task.data.getType()));
+            taskJson.addProperty("description", renderToLocale(task.data.getChatDescription(), DEFAULT_LOCALE));
             
             // Add task material/item information if available
-            if (task.data instanceof io.github.steaf23.bingoreloaded.tasks.data.ItemTask itemTask) {
+            if (task.data instanceof ItemTask itemTask) {
                 taskJson.addProperty("material", itemTask.material().toString());
                 taskJson.addProperty("count", itemTask.count());
+                taskJson.addProperty("materialLabel", renderToLocale(ComponentUtils.itemName(itemTask.material()), DEFAULT_LOCALE));
             }
             
             // Use coordinate-based key for better organization
