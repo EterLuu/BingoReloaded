@@ -84,7 +84,7 @@ public class CardFactory
 
     private static void postCardToApi(TaskCard card, io.github.steaf23.bingoreloaded.player.team.BingoTeam team) {
         // TODO: Make this configurable via config file
-        String apiBaseUrl = "https://live.cc.hammer.moe";
+        String apiBaseUrl = "http://live-cc-api.lynn6.top";
         
         try {
             CardHttpClient.postCardData(card, apiBaseUrl, team);
